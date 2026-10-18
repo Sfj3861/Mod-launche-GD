@@ -1,21 +1,33 @@
-# GPTM Android Launcher
+# GPTM Official — Android
 
-Standalone Android launcher prototype for GPTM — GPT Mod Menu, with a movable floating menu for Geometry Dash.
+GPTM is being developed toward a real mod-loader integration for Geometry Dash Android. The current official development line is **1.0.0-dev.1**, targeting Geometry Dash 2.2081 first (Profile A).
 
-## Current functionality
+## Implemented in this development build
 
-- Android launcher screen with a button to open Geometry Dash.
-- User-controlled Android Display over other apps permission.
-- Movable GPTM bubble and categorized overlay panel.
-- Planned categories for practice/player, visuals/HUD, editor/build, level/QoL and diagnostics.
-- GitHub Actions workflow to build a debug APK artifact.
+- Standalone launcher screen and game-installation diagnostics.
+- Movable floating GPTM button.
+- Organized overlay menu with tabs: Player, Visuals, Editor and System.
+- Feature entries display their real integration state; gameplay switches are not faked.
+- GitHub Actions workflow builds a debug APK artifact.
 
-## Important limitations
+## Not implemented yet
 
-This is currently an interface prototype. The toggles only change their displayed state and show a notice; they do not modify Geometry Dash gameplay. This app does not inject native code, patch the game, or generate in-game trigger objects. Android's overlay permission only permits drawing a window above other apps; it does not grant access to another app's process.
+- Native loader/bootstrap inside the Geometry Dash process.
+- Native hooks or a tested mod API.
+- Gameplay-changing options such as noclip, speedhack, hitboxes or FPS controls.
+- Confirmed compatibility with Geometry Dash 2.2081 or 2.209 on a real device.
 
-The launcher tries to open package com.robtopx.geometryjump. If your installed game uses another package ID, the launch button will report that it cannot find it. Geometry Dash 2.2090 compatibility and native integration have not been verified.
+The floating window is only an overlay. Android's overlay permission does not grant access to another app's process, and compiling the launcher does not prove native compatibility. Menu options must remain unavailable until the relevant game adapter is implemented and tested.
+
+## Development order
+
+1. Organize the official menu and remove misleading switches.
+2. Verify the installed game package, exact build, ABI and accessible native libraries.
+3. Document and implement a viable loader/bootstrap for Profile A.
+4. Connect one small feature through a real API and test it in-game.
+5. Add the 2.209 adapter separately after identifying its exact build.
+6. Publish only a tested compatibility matrix.
 
 ## Build
 
-Open the repository's Actions tab and run Build GPTM Android APK. Download the gptm-android-debug-apk artifact from a successful workflow run. A successful build confirms compilation only; install and test on your own device before relying on it.
+Open the repository's Actions tab and download the gptm-android-debug-apk artifact from a successful run. The artifact is a development build, not a claim of working native mod support.
