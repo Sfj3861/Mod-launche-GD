@@ -142,8 +142,8 @@ class LauncherActivity : Activity() {
         val result = GameDiagnostics.inspect(this)
         detectedPackage = if (result.installed) result.packageName else null
         diagnosticsText?.text = buildString {
-            append("ESTADO: \${if (result.installed) "Juego detectado" else "Juego no detectado"}\n")
-            append("PERFIL A: \${result.profile}\n\n")
+            append("ESTADO: ${if (result.installed) "Juego detectado" else "Juego no detectado"}\n")
+            append("PERFIL A: ${result.profile}\n\n")
             append(result.details)
             append("\n\nINTEGRACIÓN: el análisis de Geode ha servido para separar launcher, bootstrap nativo y runtime. NOVA ya valida e importa paquetes, pero no ejecuta código dentro del juego.")
         }
