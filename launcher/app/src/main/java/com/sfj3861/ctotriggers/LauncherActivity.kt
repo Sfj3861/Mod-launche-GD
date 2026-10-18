@@ -27,12 +27,12 @@ class LauncherActivity : Activity() {
         }
 
         val title = TextView(this).apply {
-            text = "GPTM • GPT Mod Menu"
+            text = "GPTM OFFICIAL"
             textSize = 26f
             gravity = Gravity.CENTER
         }
         val subtitle = TextView(this).apply {
-            text = "Perfil A: Geometry Dash Android 2.2081\nDiagnóstico inicial de instalación"
+            text = "Versión 1.0.0-dev.1\nPerfil A · Geometry Dash Android 2.2081\nMenú organizado y diagnóstico"
             textSize = 16f
             gravity = Gravity.CENTER
             setPadding(0, 14, 0, 18)
@@ -54,14 +54,14 @@ class LauncherActivity : Activity() {
             setOnClickListener { launchGame() }
         }
         val enableOverlay = Button(this).apply {
-            text = "ACTIVAR BOTÓN GPTM"
+            text = "ACTIVAR MENÚ FLOTANTE"
             setOnClickListener { enableFloatingButton() }
         }
         val stopOverlay = Button(this).apply {
-            text = "DESACTIVAR BOTÓN GPTM"
+            text = "CERRAR MENÚ FLOTANTE"
             setOnClickListener {
                 stopService(Intent(this@LauncherActivity, OverlayService::class.java))
-                Toast.makeText(this@LauncherActivity, "GPTM desactivado", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@LauncherActivity, "Menú GPTM cerrado", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -90,7 +90,7 @@ class LauncherActivity : Activity() {
             append("ESTADO: ${if (result.installed) "Juego detectado" else "Juego no detectado"}\n")
             append("PERFIL A: ${result.profile}\n\n")
             append(result.details)
-            append("\n\nIMPORTANTE: esta fase solo inspecciona información accesible. Todavía no carga Geode ni modifica el juego.")
+            append("\n\nESTADO OFICIAL: el menú ya está organizado, pero el loader nativo y la API de mods aún no están implementados. Esta aplicación no modifica el proceso del juego.")
         }
     }
 
@@ -105,7 +105,7 @@ class LauncherActivity : Activity() {
             return
         }
         startService(Intent(this, OverlayService::class.java))
-        Toast.makeText(this, "Botón GPTM activado (interfaz de prueba)", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "Menú flotante GPTM abierto; las funciones de juego siguen pendientes.", Toast.LENGTH_LONG).show()
     }
 
     private fun launchGame() {
