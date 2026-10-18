@@ -1,73 +1,45 @@
-# GPTM Official — technical roadmap
+# GPTM Official — NOVE mod roadmap
 
 ## Product goal
 
-Build a real mod-loader integration for Geometry Dash Android, targeting **2.2081 first (Profile A)** and **2.209 as a separate profile**. Exact installed build, ABI and native symbols must be identified before enabling either profile. A floating overlay is not a loader.
+GPTM is transitioning from a standalone Android APK to a custom .nove installable-mod package. The repository's release workflow now emits GPTM.nove, not an APK. The intended first game target is Geometry Dash Android 2.2081 (Profile A), with 2.209 treated as a separate profile.
 
-## Current status — 1.0.0-dev.1
+## Important technical boundary
 
-- Launcher diagnostics and movable overlay exist.
-- Floating menu tabs: Player, Visuals, Botting, Editor, Mods, Music and System.
-- English/Spanish selection for the floating menu.
-- Botting, editor and mod catalogues list planned features with explicit pending/not-installed states; they do not yet modify gameplay.
-- Music tab opens Song File Hub in the browser.
-- There is **no native loader/bootstrap, no native hooks and no mod API** yet. Automatic NONG download/import and in-game song mapping are not implemented.
+A file extension does not make code executable inside Geometry Dash. A .nove package needs a compatible loader that recognizes its manifest, validates the package and loads its game-side payload. The previous Kotlin overlay is an Android app/service, not a native Geometry Dash plugin, so it cannot simply be renamed to .nove.
 
-## Architecture constraints
+## Current status
 
-Android isolates app processes. `SYSTEM_ALERT_WINDOW` only allows a window above another app; it does not grant access to Geometry Dash's process or private files. A real loader requires a supported bootstrap/integration strategy and validation against the actual game package, exact version, ABI, native libraries and symbols. Song management additionally needs a verified source interface and a safe, supported path to the game's song storage. Do not silently overwrite the original game installation or bundle copyrighted game assets.
+- .nove package manifest and packaging workflow are defined.
+- The old APK build workflow has been replaced by a .nove archive workflow.
+- The existing Kotlin overlay is retained as reference source only.
+- Native game-side payload, NOVE loader integration, hooks and tested mod API are not implemented.
+- Botting, editor helpers, gameplay mods and automatic NONG management are not functional yet.
 
-## Official implementation phases
+## NOVE package contract
 
-### Phase 1 — Product structure
+- Container: ZIP archive with the .nove extension.
+- Required manifest: manifest.json.
+- Manifest includes package format, stable mod ID, display name, version, target game profiles, entry point and implementation status.
+- A loader must reject unknown format versions, unsupported game builds, invalid paths and incomplete payloads.
+- The package must never claim to be runnable unless a compatible loader and valid payload are present.
 
-- Keep the menu organized and bilingual.
-- Never show a gameplay or editor toggle as functional unless connected to a tested implementation.
-- Make compatibility and initialization states visible.
-- Maintain the planned botting, editor and mod catalogues with honest statuses.
+## Implementation phases
 
-### Phase 2 — Profile A discovery
-
-- Identify the installed package and exact build using reliable evidence, not only `versionName` or the APK filename.
-- Determine device ABI and inspect accessible native library metadata.
-- Document what can and cannot be read under Android package isolation.
-- Stop with an explicit unsupported state if build identity cannot be confirmed.
-
-### Phase 3 — Loader/bootstrap feasibility
-
-- Choose and document a legitimate, testable integration/bootstrap method before implementing hooks.
-- Study supported public loader interfaces and existing static-analysis notes; do not copy proprietary code from another launcher.
-- Keep original user levels and the original install protected.
-
-### Phase 4 — First real integration
-
-- Implement a minimal native initialization handshake for the selected build.
-- Connect one small, low-risk feature to a real API and test it in-game.
-- Test launch, initialization, game stability and feature behavior on-device before adding more features.
-
-### Phase 5 — Editor and botting tools
-
-- Implement editor helpers through supported game APIs, with backups before modifying user levels.
-- Implement macro recording/playback and frame controls only after input timing and game state can be captured reliably.
-- Keep unimplemented controls visibly unavailable.
-
-### Phase 6 — NONG management
-
-- Verify Song File Hub's supported public interface and usage conditions.
-- Add search/download metadata only after confirming source access and attribution requirements.
-- Validate a safe import/storage path for the selected Android build before claiming a song is usable in-game.
-- Never overwrite original game files without explicit, recoverable user action.
-
-### Phase 7 — Expand and validate
-
-- Add mods only through implemented and tested APIs.
-- Develop 2.209 as a separate compatibility adapter after recording its exact build identifier.
-- Publish a compatibility matrix containing Android version, ABI, exact game build and individually tested features.
+1. Package format: validate manifest fields and generate a reproducible .nove archive.
+2. Loader contract: define the NOVE loader API, lifecycle, permissions, dependency resolution and error reporting.
+3. Native payload: implement a minimal game-side module for the selected Android ABI and exact Geometry Dash build.
+4. First integration: load one low-risk feature and verify it inside the game on a real device.
+5. Editor and botting: add features only through tested game interfaces, with backups for level edits.
+6. NONG management: validate Song File Hub's supported interface and a safe Android storage path before enabling downloads/imports.
+7. Compatibility expansion: validate 2.2081 and 2.209 independently.
 
 ## Acceptance criteria
 
-- Missing and unsupported game installations are handled cleanly.
-- The loader initializes inside the selected game build, not merely beside it.
-- At least one feature is shown working in actual gameplay before GPTM is described as a functional mod menu.
-- NONGs are not described as installed until they can actually be selected and played in Geometry Dash.
-- 2.2081 and 2.209 are tested independently; compiling the APK alone is not evidence of compatibility.
+- The .nove file is produced and its manifest validates.
+- A compatible NOVE loader can discover and validate GPTM.
+- A real payload initializes inside the selected Geometry Dash build.
+- At least one advertised feature is tested in-game.
+- Unsupported game builds fail safely; original game and user-level data remain protected.
+
+A successful archive build proves packaging only, not that GPTM is installable or functional in-game.
