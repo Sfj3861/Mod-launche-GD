@@ -11,25 +11,34 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.widget.Button
+import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
 import android.widget.ScrollView
-import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
 import kotlin.math.abs
 
 /**
- * GPTM = GPT Mod Menu.
+ * GPTM Official menu shell.
  *
- * This is currently an interface prototype only. Switches demonstrate the planned
- * settings UI; they do not hook or modify Geometry Dash's native process.
+ * This version organizes the menu but intentionally does not expose fake gameplay
+ * toggles. A feature is shown as unavailable until a real, tested game adapter exists.
  */
 class OverlayService : Service() {
     private var windowManager: WindowManager? = null
     private var bubble: TextView? = null
     private var bubbleParams: WindowManager.LayoutParams? = null
     private var panel: View? = null
-    private var panelParams: WindowManager.LayoutParams? = null
+    private var selectedTab = "Jugador"
+    private var contentContainer: LinearLayout? = null
+    private var tabButtons = mutableMapOf<String, TextView>()
+
+    private val background = Color.rgb(17, 19, 29)
+    private val surface = Color.rgb(29, 32, 47)
+    private val accent = Color.rgb(139, 92, 246)
+    private val primaryText = Color.rgb(245, 246, 255)
+    private val secondaryText = Color.rgb(174, 180, 202)
+    private val warning = Color.rgb(255, 202, 120)
 
     override fun onCreate() {
         super.onCreate()
@@ -37,10 +46,11 @@ class OverlayService : Service() {
             stopSelf()
             return
         }
-
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
         createBubble()
     }
+
+    override fun onBind(intent: Intent?): IBinder? = null
 
     private fun createBubble() {
         bubbleParams = WindowManager.LayoutParams(
@@ -56,31 +66,31 @@ class OverlayService : Service() {
         }
 
         bubble = TextView(this).apply {
-            text = "GPTM"
-            textSize = 15f
+            text = "G"
+            textSize = 18f
             typeface = Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER
             setTextColor(Color.WHITE)
-            setBackgroundColor(Color.rgb(84, 55, 165))
-            setPadding(dp(14), dp(12), dp(14), dp(12))
+            setBackgroundColor(accent)
+            setPadding(dp(17), dp(12), dp(17), dp(12))
             var downX = 0f
             var downY = 0f
             var startX = 0
             var startY = 0
             setOnTouchListener { view, event ->
-                val p = bubbleParams ?: return@setOnTouchListener false
+                val params = bubbleParams ?: return@setOnTouchListener false
                 when (event.action) {
                     MotionEvent.ACTION_DOWN -> {
                         downX = event.rawX
                         downY = event.rawY
-                        startX = p.x
-                        startY = p.y
+                        startX = params.x
+                        startY = params.y
                         true
                     }
                     MotionEvent.ACTION_MOVE -> {
-                        p.x = startX + (event.rawX - downX).toInt()
-                        p.y = startY + (event.rawY - downY).toInt()
-                        windowManager?.updateViewLayout(view, p)
+                        params.x = startX + (event.rawX - downX).toInt()
+                        params.y = startY + (event.rawY - downY).toInt()
+                        windowManager?.updateViewLayout(view, params)
                         true
                     }
                     MotionEvent.ACTION_UP -> {
@@ -93,7 +103,6 @@ class OverlayService : Service() {
                 }
             }
         }
-
         try {
             windowManager?.addView(bubble, bubbleParams)
         } catch (_: Exception) {
@@ -102,11 +111,7 @@ class OverlayService : Service() {
     }
 
     private fun togglePanel() {
-        if (panel != null) {
-            removePanel()
-        } else {
-            showPanel()
-        }
+        if (panel != null) removePanel() else showPanel()
     }
 
     private fun showPanel() {
@@ -114,170 +119,228 @@ class OverlayService : Service() {
 
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(Color.rgb(25, 25, 35))
-            setPadding(dp(12), dp(10), dp(12), dp(10))
+            setBackgroundColor(background)
+            setPadding(dp(12), dp(10), dp(12), dp(12))
         }
 
         val heading = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
         }
-        val title = TextView(this).apply {
-            text = "GPTM  •  GPT Mod Menu"
-            textSize = 18f
+        val titleBlock = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        titleBlock.addView(TextView(this).apply {
+            text = "GPTM OFFICIAL"
+            textSize = 17f
             typeface = Typeface.DEFAULT_BOLD
-            setTextColor(Color.WHITE)
-        }
-        val close = Button(this).apply {
-            text = "✕"
+            setTextColor(primaryText)
+        })
+        titleBlock.addView(TextView(this).apply {
+            text = "Geometry Dash Android • Perfil A"
+            textSize = 11f
+            setTextColor(secondaryText)
+        })
+        heading.addView(titleBlock, LinearLayout.LayoutParams(0, dp(48), 1f))
+        heading.addView(Button(this).apply {
+            text = "—"
             setOnClickListener { removePanel() }
-        }
-        heading.addView(title, LinearLayout.LayoutParams(0, dp(48), 1f))
-        heading.addView(close, LinearLayout.LayoutParams(dp(48), dp(44)))
+        }, LinearLayout.LayoutParams(dp(48), dp(44)))
         root.addView(heading)
 
-        val notice = TextView(this).apply {
-            text = "PROTOTIPO DE INTERFAZ\nLos ajustes aún no están conectados al motor del juego."
-            textSize = 12f
-            setTextColor(Color.rgb(255, 211, 120))
-            setPadding(0, dp(4), 0, dp(10))
+        val status = TextView(this).apply {
+            text = "MODO INTERFAZ · El motor nativo aún no está conectado"
+            textSize = 11f
+            setTextColor(warning)
+            setPadding(dp(10), dp(10), dp(10), dp(10))
+            setBackgroundColor(surface)
         }
-        root.addView(notice)
+        val statusParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
+        )
+        statusParams.setMargins(0, dp(6), 0, dp(10))
+        root.addView(status, statusParams)
 
-        val scroll = ScrollView(this)
-        val list = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        scroll.addView(list)
-        addSection(list, "PLAYER / PRACTICE")
-        addToggle(list, "Practice checkpoints", "Herramientas de práctica")
-        addToggle(list, "Start Position helper", "Gestión de start positions")
-        addToggle(list, "Auto-retry", "Reintento automático")
-        addToggle(list, "Practice music sync", "Sincronización de música en práctica")
-        addToggle(list, "Noclip (testing)", "Prueba de colisiones")
-        addToggle(list, "Ignore damage", "Prueba de daño")
-        addToggle(list, "Speedhack", "Control de velocidad")
-        addToggle(list, "TPS/FPS control", "Control de tasa de simulación")
-        addToggle(list, "Show trajectory", "Predicción visual de trayectoria")
-        addToggle(list, "Input display", "Visualización de pulsaciones")
-        addSection(list, "VISUALS / HUD")
-        addToggle(list, "FPS counter", "Contador de FPS")
-        addToggle(list, "Show hitboxes", "Visualización de hitboxes")
-        addToggle(list, "Attempt counter", "Contador de intentos")
-        addToggle(list, "Disable screen shake", "Desactivar sacudida de pantalla")
-        addToggle(list, "Disable pulses", "Desactivar pulsos visuales")
-        addToggle(list, "Disable particles", "Reducir partículas")
-        addToggle(list, "Low Detail helper", "Ayuda para modo de bajo detalle")
-        addToggle(list, "Show level progress", "Progreso del nivel")
-        addToggle(list, "Click indicator", "Indicador de clics")
-        addToggle(list, "Show level layout", "Visualización de layout")
-        addSection(list, "EDITOR / BUILD")
-        addToggle(list, "C→T translator", "Traductor de comandos a plan de triggers")
-        addToggle(list, "Object ID inspector", "Inspector de objetos")
-        addToggle(list, "Group ID helper", "Ayuda para Group IDs")
-        addToggle(list, "Copy / paste objects", "Herramientas de copia de objetos")
-        addToggle(list, "Free move helper", "Ayuda de movimiento libre")
-        addToggle(list, "Rotate step helper", "Ajustes de rotación")
-        addToggle(list, "Trigger plan preview", "Previsualización del plan de triggers")
-        addToggle(list, "Object count", "Recuento de objetos")
-        addToggle(list, "Layout helper", "Ayudas para layouts")
-        addSection(list, "LEVEL / QOL")
-        addToggle(list, "Copy level ID", "Copiar identificador de nivel")
-        addToggle(list, "Copy level stats", "Herramientas de estadísticas")
-        addToggle(list, "Song info", "Información de canción")
-        addToggle(list, "Quick restart", "Reinicio rápido")
-        addToggle(list, "Hide menu in gameplay", "Ocultar menú durante la partida")
-        addToggle(list, "Remember settings", "Guardar preferencias")
-        addSection(list, "DIAGNOSTICS")
-        addToggle(list, "Compatibility report", "Informe de compatibilidad")
-        addToggle(list, "Native hook status", "Estado de integración nativa")
-        addToggle(list, "Debug logging", "Registro de diagnóstico")
+        val tabScroll = HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false }
+        val tabRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        listOf("Jugador", "Visuales", "Editor", "Sistema").forEach { tab ->
+            val tabView = TextView(this).apply {
+                text = tab
+                textSize = 13f
+                gravity = Gravity.CENTER
+                setPadding(dp(13), dp(11), dp(13), dp(11))
+                setOnClickListener {
+                    selectedTab = tab
+                    updateTabs()
+                    renderTab()
+                }
+            }
+            tabButtons[tab] = tabView
+            val params = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            params.setMargins(0, 0, dp(6), 0)
+            tabRow.addView(tabView, params)
+        }
+        tabScroll.addView(tabRow)
+        root.addView(tabScroll)
 
+        val scroll = ScrollView(this).apply {
+            isFillViewport = false
+            contentContainer = LinearLayout(this@OverlayService).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(0, dp(8), 0, 0)
+            }
+            addView(contentContainer)
+        }
         root.addView(scroll, LinearLayout.LayoutParams(
-            WindowManager.LayoutParams.MATCH_PARENT, 0, 1f
+            LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f
         ))
 
         val footer = TextView(this).apply {
-            text = "GPTM • Perfil A: GD 2.2081 por verificar"
-            textSize = 11f
+            text = "GPTM · 1.0.0-dev · No modifica el juego en esta fase"
+            textSize = 10f
             gravity = Gravity.CENTER
-            setTextColor(Color.LTGRAY)
-            setPadding(0, dp(8), 0, 0)
+            setTextColor(secondaryText)
+            setPadding(0, dp(10), 0, 0)
         }
         root.addView(footer)
 
         panelParams = WindowManager.LayoutParams(
-            dp(310),
-            dp(490),
+            dp(330),
+            dp(470),
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.CENTER
         }
-        panel = root
+
         try {
             windowManager?.addView(root, panelParams)
+            panel = root
+            updateTabs()
+            renderTab()
         } catch (_: Exception) {
             panel = null
-            panelParams = null
-            Toast.makeText(this, "No se pudo mostrar el menú GPTM.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "No se pudo abrir el menú GPTM", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun updateTabs() {
+        tabButtons.forEach { (name, view) ->
+            view.setTextColor(if (name == selectedTab) Color.WHITE else secondaryText)
+            view.setBackgroundColor(if (name == selectedTab) accent else surface)
+        }
+    }
+
+    private fun renderTab() {
+        val container = contentContainer ?: return
+        container.removeAllViews()
+        when (selectedTab) {
+            "Jugador" -> {
+                addSection(container, "PRÁCTICA Y JUGABILIDAD")
+                addFeature(container, "Practice checkpoints", "Gestión de checkpoints", "Pendiente del motor")
+                addFeature(container, "Start Position helper", "Herramientas para posiciones iniciales", "Pendiente del motor")
+                addFeature(container, "Auto-retry", "Reintento automático", "Pendiente del motor")
+                addFeature(container, "Practice music sync", "Sincronización de música en práctica", "Pendiente del motor")
+                addFeature(container, "Noclip / Ignore damage", "Herramientas de pruebas de colisión", "No disponible")
+                addFeature(container, "Speedhack / TPS", "Control de velocidad y simulación", "No disponible")
+                addFeature(container, "Input display", "Visualización de pulsaciones", "Pendiente del motor")
+            }
+            "Visuales" -> {
+                addSection(container, "HUD Y RENDIMIENTO")
+                addFeature(container, "FPS counter", "Contador de fotogramas", "Pendiente del motor")
+                addFeature(container, "Hitboxes", "Visualización de hitboxes", "Pendiente del motor")
+                addFeature(container, "Attempt counter", "Contador de intentos", "Pendiente del motor")
+                addFeature(container, "Disable screen shake", "Control de sacudida de pantalla", "Pendiente del motor")
+                addFeature(container, "Disable pulses / particles", "Control de efectos visuales", "Pendiente del motor")
+                addFeature(container, "Low Detail helper", "Ayudas para bajo detalle", "Pendiente del motor")
+                addFeature(container, "Level progress", "Información de progreso", "Pendiente del motor")
+            }
+            "Editor" -> {
+                addSection(container, "HERRAMIENTAS DE CREACIÓN")
+                addFeature(container, "Object / Group ID inspector", "Inspección de identificadores", "Pendiente del motor")
+                addFeature(container, "C→T trigger planner", "Planificador de comandos y triggers", "Herramienta independiente")
+                addFeature(container, "Layout helper", "Ayudas para layouts", "Pendiente del motor")
+                addFeature(container, "Copy / paste objects", "Herramientas de objetos", "Pendiente del motor")
+                addFeature(container, "Trigger plan preview", "Vista previa de planificación", "Pendiente del motor")
+            }
+            "Sistema" -> {
+                addSection(container, "ESTADO DE INTEGRACIÓN")
+                addFeature(container, "Loader nativo", "Carga dentro del proceso del juego", "No implementado")
+                addFeature(container, "Perfil 2.2081", "Compatibilidad objetivo", "Por verificar en dispositivo")
+                addFeature(container, "Perfil 2.209", "Perfil separado", "No habilitado")
+                addFeature(container, "API de mods", "Conexión entre menú y juego", "No implementado")
+                addFeature(container, "Seguridad", "No modifica ni reemplaza el APK original", "Activo")
+                container.addView(TextView(this).apply {
+                    text = "Las opciones de juego permanecen desactivadas hasta disponer de un loader real y una prueba en la versión objetivo. No se mostrarán interruptores que aparenten funcionar."
+                    textSize = 12f
+                    setTextColor(secondaryText)
+                    setPadding(dp(4), dp(10), dp(4), dp(4))
+                })
+            }
         }
     }
 
     private fun addSection(parent: LinearLayout, name: String) {
-        val section = TextView(this).apply {
+        parent.addView(TextView(this).apply {
             text = name
-            textSize = 13f
+            textSize = 11f
             typeface = Typeface.DEFAULT_BOLD
-            setTextColor(Color.rgb(184, 160, 255))
-            setPadding(0, dp(12), 0, dp(4))
-        }
-        parent.addView(section)
+            setTextColor(Color.rgb(190, 170, 255))
+            setPadding(dp(3), dp(8), dp(3), dp(7))
+        })
     }
 
-    private fun addToggle(parent: LinearLayout, label: String, description: String) {
-        val toggle = Switch(this).apply {
-            text = label
-            textSize = 14f
-            setTextColor(Color.WHITE)
-            contentDescription = description
-            setPadding(0, dp(5), 0, dp(5))
-            setOnCheckedChangeListener { _, _ ->
-                Toast.makeText(
-                    this@OverlayService,
-                    "$label: cambio solo visual; integración del juego pendiente.",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
+    private fun addFeature(parent: LinearLayout, name: String, description: String, state: String) {
+        val card = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(surface)
+            setPadding(dp(11), dp(10), dp(11), dp(10))
         }
-        parent.addView(toggle, LinearLayout.LayoutParams(
-            WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT
-        ))
+        card.addView(TextView(this).apply {
+            text = name
+            textSize = 14f
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(primaryText)
+        })
+        card.addView(TextView(this).apply {
+            text = description
+            textSize = 11f
+            setTextColor(secondaryText)
+            setPadding(0, dp(3), 0, dp(6))
+        })
+        card.addView(TextView(this).apply {
+            text = "• $state"
+            textSize = 10f
+            setTextColor(if (state == "Activo") Color.rgb(120, 220, 160) else warning)
+        })
+        val params = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
+        )
+        params.setMargins(0, 0, 0, dp(7))
+        parent.addView(card, params)
     }
 
     private fun removePanel() {
+        val current = panel ?: return
         try {
-            panel?.let { windowManager?.removeView(it) }
+            windowManager?.removeView(current)
         } catch (_: Exception) {
+            // The system may already have removed the overlay.
         }
         panel = null
-        panelParams = null
+        contentContainer = null
+        tabButtons.clear()
     }
 
-    private fun dp(value: Int): Int =
-        (value * resources.displayMetrics.density).toInt()
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     override fun onDestroy() {
         removePanel()
-        try {
-            bubble?.let { windowManager?.removeView(it) }
-        } catch (_: Exception) {
+        bubble?.let {
+            try { windowManager?.removeView(it) } catch (_: Exception) {}
         }
         bubble = null
-        bubbleParams = null
-        windowManager = null
         super.onDestroy()
     }
-
-    override fun onBind(intent: Intent?): IBinder? = null
 }
