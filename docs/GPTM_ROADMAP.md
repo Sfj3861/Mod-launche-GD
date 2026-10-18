@@ -1,34 +1,49 @@
-# GPTM — GPT Mod Menu
+# GPTM — GPT Mod Menu: technical roadmap
 
-GPTM is an original, standalone Android project for a categorized Geometry Dash companion/mod-menu interface. It does not copy proprietary source code or assets from Eclipse, Mega Hack, or QOLmod.
+## Product goal
 
-## Current prototype
+GPTM should work as a Geode-style loader for Geometry Dash Android, requiring the game to be installed. The intended targets are **2.2081 and 2.2090**. It must not bundle copyrighted game assets or pretend that an overlay is equivalent to native mod loading.
 
-The overlay groups planned settings into:
-- **Player / Practice:** checkpoints, Start Position helper, auto-retry, practice music sync, noclip testing, ignore-damage testing, speed/TPS controls, trajectory and input display.
-- **Visuals / HUD:** FPS, hitboxes, attempts, screen shake/pulses/particles, low-detail helper, progress, click indicator and layout visibility.
-- **Editor / Build:** C-to-Triggers, object/group ID helpers, copy/paste and free-move helpers, rotation helper, trigger-plan preview, object count and layout helper.
-- **Level / QoL:** level ID and stats, song info, quick restart, hiding the menu during gameplay, saved preferences.
-- **Diagnostics:** compatibility report, native integration status and debug logging.
+## Current reality
 
-**These are UI placeholders.** The switches currently only change their displayed state and show a notice; they do not alter Geometry Dash gameplay. This launcher is not a native mod loader and does not inject into the game's process.
+The Kotlin app currently contains a launcher screen and a floating overlay panel. The panel is UI only; toggles are not connected to Geometry Dash. No native loader, hook system, or in-app hosting mechanism has been established. Both game versions are target requirements, not tested compatibility.
 
-## Compatibility gate
+## Why a normal launcher is insufficient
 
-Before native integration is attempted, verify the actual installed game's manifest/version, package ID, ABI, native library build and symbols. An APK filename is not authoritative evidence of the in-game version. This repository does not yet establish a tested native hook path for GD 2.2090.
+Android isolates applications into separate processes. A normal application cannot host another application's Activity inside its own Activity or access the game's process merely by requesting `SYSTEM_ALERT_WINDOW`. A real loader requires a supported integration/bootstrap strategy and must be validated against the game's actual package, version, ABI, native libraries and symbols. Android package/signature restrictions and distribution method also affect the design.
 
-## Roadmap
+## Staged implementation
 
-1. **GPTM shell:** categories, search, favourites, setting persistence and a clear “not connected” status.
-2. **Standalone utilities:** implement features that can work without altering the game, with honest capability reporting.
-3. **Integration research:** identify supported extension points and confirm the target game's version and ABI. Do not assume overlay permission grants process access.
-4. **Feature adapters:** connect options only to verified APIs, with capability checks and a visible unsupported state when unavailable.
-5. **C→T translator:** design a restricted command parser and reviewable trigger-plan preview; create editor objects only through verified editor APIs.
-6. **Validation:** build in CI, test on a separate game copy, preserve original APKs and levels, and record which features were actually tested.
+1. **Installation/version detector**
+   - Detect whether Geometry Dash is installed.
+   - Identify the installed package and available native ABI/library information.
+   - Distinguish 2.2081 from 2.2090 using reliable build information, not the downloaded APK filename.
+   - Show a clear unsupported state for other or unknown builds.
 
-## Engineering rules
+2. **Compatibility adapters**
+   - Keep separate compatibility profiles for 2.2081 and 2.2090.
+   - Verify each against an actual installed build and device architecture before enabling features.
+   - Never infer compatibility merely because the app compiles.
 
-- Never execute arbitrary C/C++ source from user input. Use a constrained command translator.
-- Never label a feature “working” until it is connected and tested on the target version.
-- Keep experimental gameplay-affecting features opt-in.
-- A successful APK build verifies compilation only, not in-game compatibility.
+3. **Loader/bootstrap**
+   - Select and document a viable, testable integration method before writing native hooks.
+   - Keep the original game install and user levels protected; don't silently overwrite or modify them.
+   - Do not represent an overlay, WebView, or external launch intent as native loading.
+
+4. **GPTM menu and mod API**
+   - Connect menu entries only to implemented and tested APIs.
+   - Display unsupported/unavailable states for features without an adapter.
+   - Keep diagnostics and feature status visible.
+
+5. **Verification**
+   - Build with GitHub Actions.
+   - Test installation, launch, loader initialization and basic gameplay independently on 2.2081 and 2.2090.
+   - Publish a compatibility matrix listing Android version, ABI, game build and features actually tested.
+
+## Acceptance criteria
+
+- Geometry Dash must already be installed.
+- GPTM must detect unsupported or missing game installations cleanly.
+- Both target game versions must be individually tested before being described as supported.
+- The game must actually initialize through the loader and expose a functioning mod integration API; a floating menu by itself does not meet the goal.
+- Do not bundle the original game's APK/assets or copy proprietary code from other mod menus.
