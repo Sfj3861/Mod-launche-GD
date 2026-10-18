@@ -102,12 +102,8 @@ data class GameDiagnostics(
         }
 
         private fun findGamePackage(pm: PackageManager): String? {
-            val candidates = listOf(
-                DEFAULT_PACKAGE,
-                "com.robtopx.geometryjump2",
-                "com.geode.launcher"
-            )
-            return candidates.firstOrNull { candidate ->
+            val candidates = listOf(DEFAULT_PACKAGE, "com.robtopx.geometryjump2")
+            val known = candidates.firstOrNull { candidate ->
                 try {
                     if (Build.VERSION.SDK_INT >= 33) {
                         pm.getPackageInfo(candidate, PackageManager.PackageInfoFlags.of(0))
@@ -115,11 +111,36 @@ data class GameDiagnostics(
                         @Suppress("DEPRECATION")
                         pm.getPackageInfo(candidate, 0)
                     }
-                    candidate != "com.geode.launcher"
+                    true
                 } catch (_: Exception) {
                     false
                 }
             }
+            if (known != null) return known
+
+            // GDPS builds may use a different package ID. Search visible launcher
+            // activities by app label, but never mistake the Geode launcher itself
+            // for the game package.
+            val launcherIntent = android.content.Intent(android.content.Intent.ACTION_MAIN).addCategory(
+                android.content.Intent.CATEGORY_LAUNCHER
+            )
+            val activities = try {
+                if (Build.VERSION.SDK_INT >= 33) {
+                    pm.queryIntentActivities(launcherIntent, PackageManager.ResolveInfoFlags.of(0))
+                } else {
+                    @Suppress("DEPRECATION")
+                    pm.queryIntentActivities(launcherIntent, 0)
+                }
+            } catch (_: Exception) {
+                emptyList()
+            }
+            return activities.firstOrNull { resolveInfo ->
+                val pkg = resolveInfo.activityInfo?.packageName ?: return@firstOrNull false
+                val label = resolveInfo.loadLabel(pm)?.toString().orEmpty()
+                pkg != "com.geode.launcher" &&
+                    (label.contains("geometry dash", ignoreCase = true) ||
+                     label.contains("gdps", ignoreCase = true))
+            }?.activityInfo?.packageName
         }
 
         private fun identifyProfile(versionName: String?, versionCode: Long): String {
