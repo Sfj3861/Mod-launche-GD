@@ -1,30 +1,38 @@
-# GPTM — GPT Mod Menu for Geometry Dash Android
+# NOVA Loader / GPTM — Geometry Dash Android
 
-GPTM is intended to become a **Geode-style mod loader** for an already-installed copy of Geometry Dash, not just a shortcut launcher.
+This repository is developing a custom **NOVA mod package format and Android loader** for an already-installed Geometry Dash build. The supplied Geode Android APK was inspected to understand its separation between launcher, native bridge, loader/runtime, and mods. GPTM does not reuse Geode's proprietary binaries.
 
-## Required end state
+## What is implemented now
 
-- Require Geometry Dash to be installed on the device; GPTM does not bundle the game's copyrighted APK or assets.
-- Target both Geometry Dash Android **2.2081** and **2.209**. Keep separate compatibility profiles and verify the exact installed 2.209 build (for example, 2.2090/2.2091 identifiers if present on the device).
-- Provide a GPTM mod menu and a real loading/integration layer. A floating overlay alone is not a mod loader.
-- Preserve the user's original game install and clearly report unsupported versions or ABIs rather than claiming compatibility.
+- Android launcher with read-only game installation diagnostics.
+- **Import / Validate .NOVA** file picker.
+- Private package library at the app's internal `files/nova-mods` directory.
+- ZIP/manifest checks, including safe paths, duplicate ZIP entries, archive-size limits, entrypoint existence, schema version, declared game, and basic ABI/profile compatibility reporting.
+- GitHub Actions jobs to package `GPTM.nova` and compile the Android debug APK.
 
-## Current status
+## What is not implemented yet
 
-The current Kotlin app now includes an initial read-only installation diagnostic for Profile A: it reports the detected package, Android versionName/versionCode, device ABI, visible native-library path and whether `libcocos2dcpp.so` is visible there. It tries known Geometry Dash package IDs and visible launcher labels for GDPS builds. This is a diagnostic foundation only: exact 2.2081 identification may remain unknown when Android metadata is generic, and it does not load native mods. Menu switches still do not modify Geometry Dash. **The requested Geode-style integration is not implemented yet.** The 2.2081 and 2.209 targets remain requirements, not verified compatibility claims.
+- A native bootstrap that initializes inside Geometry Dash.
+- A game-side NOVA runtime or stable mod API.
+- Actual loading/execution of .nova payloads.
+- Verified support for Geometry Dash Android 2.2081 or 2.2090.
+- Working gameplay features controlled by the overlay.
 
-## Architecture direction
+**Important:** the current NOVA validator deliberately does not execute package payloads. A package being accepted into the library does not mean it can run inside Geometry Dash. The Geode APK findings are architectural evidence, not proof that its exact loader mechanism can be reused.
 
-A normal Android app cannot simply embed another app's Activity or gain access to its process through overlay permission. To behave like a mod loader, GPTM needs a verified integration/bootstrap design for the installed game, native libraries and each supported game build. That design must account for Android package/signature rules, ABI, game library symbols, and whether a supported extension point exists. Do not claim that a clone-like in-app experience is possible just by adding a WebView or floating window.
+## Build and download
 
-Implementation should proceed in verifiable stages:
+Open [GitHub Actions](https://github.com/Sfj3861/Mod-launche-GD/actions). The workflow **Build NOVA package and Android loader** produces:
 
-1. Detect whether Geometry Dash is installed and identify its actual version, package, ABI and native library build.
-2. Build and test separate compatibility profiles for 2.2081 and 2.209; detect the exact build identifier and report unknown builds as unsupported.
-3. Establish a documented, testable loading/bootstrap mechanism before wiring any menu toggles to game behavior.
-4. Implement the GPTM menu as a front end to verified mod APIs, with capability checks.
-5. Build through GitHub Actions and test on-device independently on both target versions. A successful APK build is not proof of in-game compatibility.
+- `GPTM-nova-mod`: a `.nova` archive containing the current metadata/documentation scaffold.
+- `nova-loader-android-debug`: the Android debug APK with the NOVA package validator.
 
-## Build the current prototype
+Build success proves compilation and packaging only. It does not prove that a native mod loads inside Geometry Dash.
 
-Open **Actions → Build GPTM Android APK** and run the workflow. Download `gptm-android-debug-apk` after a successful run. This artifact is only the current launcher/UI prototype until native loading is implemented.
+## Technical notes
+
+- [Geode Android APK analysis](docs/GEODE_ANDROID_APK_ANALYSIS.md)
+- [NOVA package format and current validator](docs/NOVA_FORMAT.md)
+- [GPTM / NOVA roadmap](docs/GPTM_ROADMAP.md)
+
+Geometry Dash's original APK and assets are not bundled. Target profiles for 2.2081 and 2.2090 must be verified independently on real devices before compatibility is claimed.
