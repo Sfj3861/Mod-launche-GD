@@ -279,7 +279,7 @@ class OverlayService : Service() {
                 note(c, tr("Song File Hub reúne canciones NONG para Geometry Dash. GPTM puede abrir su web; la descarga e instalación automática dentro del juego aún no están conectadas.", "Song File Hub hosts NONG tracks for Geometry Dash. GPTM can open its website; automatic download and in-game installation are not connected yet."))
                 actionButton(c, tr("ABRIR SONG FILE HUB", "OPEN SONG FILE HUB")) {
                     try {
-                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://songfilehub.com/")))
+                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://songfilehub.com/")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                     } catch (_: Exception) {
                         Toast.makeText(this, tr("No hay navegador disponible", "No browser available"), Toast.LENGTH_SHORT).show()
                     }
