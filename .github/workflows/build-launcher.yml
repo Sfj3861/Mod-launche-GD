@@ -1,52 +1,57 @@
-name: Package GPTM NOVE mod
+name: Package GPTM NOVA mod
 
 on:
   workflow_dispatch:
   push:
     paths:
+      - "nova-package/**"
       - "nove-package/**"
-      - "docs/NOVE_FORMAT.md"
+      - "docs/NOVA_FORMAT.md"
       - ".github/workflows/build-launcher.yml"
 
 permissions:
   contents: read
 
 jobs:
-  package-nove:
+  package-nova:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Validate NOVE manifest
+      - name: Validate NOVA manifest
         run: |
           python3 - <<'PY'
           import json
           from pathlib import Path
-          p = Path("nove-package/manifest.json")
+          p = Path("nova-package/manifest.json")
           data = json.loads(p.read_text(encoding="utf-8"))
-          required = ["format", "id", "name", "version", "target", "entrypoint", "status"]
+          required = ["format", "format_version", "id", "name", "version", "target", "entrypoint", "runtime", "status"]
           missing = [key for key in required if not data.get(key)]
           if missing:
               raise SystemExit("Missing manifest fields: " + ", ".join(missing))
-          if data["format"] != "nove":
-              raise SystemExit("Unsupported package format")
+          if data["format"] != "nova" or data["format_version"] != 1:
+              raise SystemExit("Unsupported NOVA package format/version")
+          entry = Path("nova-package") / data["entrypoint"]
+          if not entry.is_file():
+              raise SystemExit("Declared entry point does not exist: " + str(entry))
           if not data["id"].replace(".", "").replace("-", "").isalnum():
               raise SystemExit("Invalid mod id")
-          print("NOVE manifest valid:", data["id"], data["version"])
+          print("NOVA manifest valid:", data["id"], data["version"])
           PY
 
-      - name: Build .nove package
+      - name: Build .nova package
         run: |
           mkdir -p dist
-          cd nove-package
-          zip -r ../dist/GPTM.nove . -x "*.DS_Store"
+          cd nova-package
+          zip -r ../dist/GPTM.nova . -x "*.DS_Store"
           cd ..
-          unzip -l dist/GPTM.nove
+          unzip -t dist/GPTM.nova
+          unzip -l dist/GPTM.nova
 
-      - name: Upload NOVE mod package
+      - name: Upload NOVA mod package
         uses: actions/upload-artifact@v4
         with:
-          name: GPTM-nove-mod
-          path: dist/GPTM.nove
+          name: GPTM-nova-mod
+          path: dist/GPTM.nova
           if-no-files-found: error
