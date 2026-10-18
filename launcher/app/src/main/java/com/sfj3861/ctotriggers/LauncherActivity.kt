@@ -67,9 +67,7 @@ class LauncherActivity : Activity() {
 
         root.addView(title, matchWrap())
         root.addView(subtitle, matchWrap())
-        root.addView(diagnostics, LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f
-        ))
+        root.addView(diagnostics, matchWrap())
         root.addView(refresh, matchWrap())
         root.addView(launch, matchWrap())
         root.addView(enableOverlay, matchWrap())
