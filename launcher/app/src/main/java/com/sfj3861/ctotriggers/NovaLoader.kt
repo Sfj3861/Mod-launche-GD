@@ -74,7 +74,7 @@ object NovaLoader {
                     else "Archivado para inspección; no se ejecutará."
             )
         } catch (e: Exception) {
-            return failure("Importación rechazada: \${e.message ?: e.javaClass.simpleName}")
+            return failure("Importación rechazada: ${e.message ?: e.javaClass.simpleName}")
         } finally {
             if (temp.exists()) temp.delete()
         }
