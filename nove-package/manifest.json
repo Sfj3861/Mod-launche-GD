@@ -1,0 +1,31 @@
+{
+  "format": "nove",
+  "format_version": 1,
+  "id": "com.sfj3861.gptm",
+  "name": "GPTM Official",
+  "version": "1.0.0-dev.2",
+  "author": "Sfj3861",
+  "target": {
+    "game": "Geometry Dash Android",
+    "profiles": [
+      {
+        "label": "Profile A",
+        "version": "2.2081",
+        "status": "planned"
+      },
+      {
+        "label": "Profile B",
+        "version": "2.209",
+        "status": "planned"
+      }
+    ],
+    "abis": ["arm64-v8a", "armeabi-v7a"]
+  },
+  "entrypoint": "payload/README.md",
+  "runtime": "gptm-nove-v1",
+  "status": "package-scaffold-only",
+  "capabilities": [],
+  "dependencies": [],
+  "permissions": [],
+  "description": "GPTM custom mod package scaffold. Requires a compatible NOVE loader and a real game-side payload before it can run."
+}
