@@ -15,7 +15,12 @@ import android.widget.Toast
 
 class LauncherActivity : Activity() {
     private var diagnosticsText: TextView? = null
+    private var loaderText: TextView? = null
     private var detectedPackage: String? = null
+
+    companion object {
+        private const val REQUEST_NOVA_FILE = 4201
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -27,12 +32,12 @@ class LauncherActivity : Activity() {
         }
 
         val title = TextView(this).apply {
-            text = "GPTM OFFICIAL"
+            text = "NOVA LOADER · GPTM"
             textSize = 26f
             gravity = Gravity.CENTER
         }
         val subtitle = TextView(this).apply {
-            text = "Versión 1.0.0-dev.1\nPerfil A · Geometry Dash Android 2.2081\nMenú organizado y diagnóstico"
+            text = "Versión 1.0.0-dev.2\nPerfil A · Geometry Dash Android 2.2081\nDiagnóstico y validador de paquetes NOVA"
             textSize = 16f
             gravity = Gravity.CENTER
             setPadding(0, 14, 0, 18)
@@ -49,6 +54,19 @@ class LauncherActivity : Activity() {
             text = "ANALIZAR INSTALACIÓN"
             setOnClickListener { refreshDiagnostics() }
         }
+        val importNova = Button(this).apply {
+            text = "IMPORTAR / VALIDAR .NOVA"
+            setOnClickListener { chooseNovaPackage() }
+        }
+        val loaderStatus = TextView(this).apply {
+            textSize = 13f
+            setTextIsSelectable(true)
+            setPadding(12, 12, 12, 12)
+            setBackgroundColor(0xFFE8EAF6.toInt())
+            text = "NOVA Loader: validador de paquetes listo.\nRuntime nativo del juego: no implementado."
+        }
+        loaderText = loaderStatus
+
         val launch = Button(this).apply {
             text = "ABRIR GEOMETRY DASH"
             setOnClickListener { launchGame() }
@@ -69,6 +87,8 @@ class LauncherActivity : Activity() {
         root.addView(subtitle, matchWrap())
         root.addView(diagnostics, matchWrap())
         root.addView(refresh, matchWrap())
+        root.addView(importNova, matchWrap())
+        root.addView(loaderStatus, matchWrap())
         root.addView(launch, matchWrap())
         root.addView(enableOverlay, matchWrap())
         root.addView(stopOverlay, matchWrap())
@@ -81,16 +101,51 @@ class LauncherActivity : Activity() {
     private fun matchWrap() = LinearLayout.LayoutParams(
         ViewGroup.LayoutParams.MATCH_PARENT,
         ViewGroup.LayoutParams.WRAP_CONTENT
-    )
+    ).apply { bottomMargin = 8 }
+
+    private fun chooseNovaPackage() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "application/octet-stream"
+            putExtra(Intent.EXTRA_TITLE, "Selecciona un paquete .nova")
+        }
+        try {
+            startActivityForResult(intent, REQUEST_NOVA_FILE)
+        } catch (_: Exception) {
+            Toast.makeText(this, "No se pudo abrir el selector de archivos.", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    @Deprecated("Uses the compatible Activity result callback for the current minimum SDK.")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode != REQUEST_NOVA_FILE || resultCode != RESULT_OK) return
+        val uri = data?.data ?: return
+        loaderText?.text = "Analizando paquete…"
+        val report = NovaLoader.importAndValidate(this, uri)
+        loaderText?.text = buildString {
+            append(if (report.acceptedForLibrary) "PAQUETE ACEPTADO EN BIBLIOTECA" else "PAQUETE RECHAZADO")
+            append("\n")
+            append(if (report.runnable) "Estado del paquete: candidato ejecutable" else "Estado del paquete: no ejecutable")
+            append("\n\n")
+            append(report.details)
+            append("\n\nIMPORTANTE: la validación no equivale a cargar el mod dentro de Geometry Dash.")
+        }
+        Toast.makeText(
+            this,
+            if (report.acceptedForLibrary) "Paquete NOVA validado y guardado" else "Paquete NOVA rechazado",
+            Toast.LENGTH_LONG
+        ).show()
+    }
 
     private fun refreshDiagnostics() {
         val result = GameDiagnostics.inspect(this)
         detectedPackage = if (result.installed) result.packageName else null
         diagnosticsText?.text = buildString {
-            append("ESTADO: ${if (result.installed) "Juego detectado" else "Juego no detectado"}\n")
-            append("PERFIL A: ${result.profile}\n\n")
+            append("ESTADO: \${if (result.installed) "Juego detectado" else "Juego no detectado"}\n")
+            append("PERFIL A: \${result.profile}\n\n")
             append(result.details)
-            append("\n\nESTADO OFICIAL: el menú ya está organizado, pero el loader nativo y la API de mods aún no están implementados. Esta aplicación no modifica el proceso del juego.")
+            append("\n\nINTEGRACIÓN: el análisis de Geode ha servido para separar launcher, bootstrap nativo y runtime. NOVA ya valida e importa paquetes, pero no ejecuta código dentro del juego.")
         }
     }
 
