@@ -196,7 +196,7 @@ class OverlayService : Service() {
         ))
 
         val footer = TextView(this).apply {
-            text = "GPTM • Compatibilidad GD 2.2090 por verificar"
+            text = "GPTM • Perfil A: GD 2.2081 por verificar"
             textSize = 11f
             gravity = Gravity.CENTER
             setTextColor(Color.LTGRAY)
