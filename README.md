@@ -11,7 +11,7 @@ GPTM is intended to become a **Geode-style mod loader** for an already-installed
 
 ## Current status
 
-The current Kotlin app is only an early UI prototype: it can request overlay permission and try to launch the package `com.robtopx.geometryjump`. Its switches do not modify Geometry Dash, and it does not load native mods. **The requested Geode-style integration is not implemented yet.** The 2.2081 and 2.209 targets are requirements, not verified compatibility claims.
+The current Kotlin app now includes an initial read-only installation diagnostic for Profile A: it reports the detected package, Android versionName/versionCode, device ABI, visible native-library path and whether `libcocos2dcpp.so` is visible there. It tries known Geometry Dash package IDs and visible launcher labels for GDPS builds. This is a diagnostic foundation only: exact 2.2081 identification may remain unknown when Android metadata is generic, and it does not load native mods. Menu switches still do not modify Geometry Dash. **The requested Geode-style integration is not implemented yet.** The 2.2081 and 2.209 targets remain requirements, not verified compatibility claims.
 
 ## Architecture direction
 
