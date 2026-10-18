@@ -2,7 +2,7 @@
 
 ## Product goal
 
-GPTM should work as a Geode-style loader for Geometry Dash Android, requiring the game to be installed. The intended targets are **2.2081 and 2.2090**. It must not bundle copyrighted game assets or pretend that an overlay is equivalent to native mod loading.
+GPTM should work as a Geode-style loader for Geometry Dash Android, requiring the game to be installed. The intended targets are **2.2081 and 2.209**. For the 2.209 target, detect and record the exact installed build identifier (such as 2.2090/2.2091 if applicable); do not assume these builds are interchangeable. It must not bundle copyrighted game assets or pretend that an overlay is equivalent to native mod loading.
 
 ## Current reality
 
@@ -17,11 +17,11 @@ Android isolates applications into separate processes. A normal application cann
 1. **Installation/version detector**
    - Detect whether Geometry Dash is installed.
    - Identify the installed package and available native ABI/library information.
-   - Distinguish 2.2081 from 2.2090 using reliable build information, not the downloaded APK filename.
+   - Distinguish 2.2081 from 2.209 using reliable in-app/build information, not the downloaded APK filename; retain the exact 2.209 build identifier.
    - Show a clear unsupported state for other or unknown builds.
 
 2. **Compatibility adapters**
-   - Keep separate compatibility profiles for 2.2081 and 2.2090.
+   - Keep separate compatibility profiles for 2.2081 and 2.209, and track any 2.209 build-specific differences.
    - Verify each against an actual installed build and device architecture before enabling features.
    - Never infer compatibility merely because the app compiles.
 
@@ -37,7 +37,7 @@ Android isolates applications into separate processes. A normal application cann
 
 5. **Verification**
    - Build with GitHub Actions.
-   - Test installation, launch, loader initialization and basic gameplay independently on 2.2081 and 2.2090.
+   - Test installation, launch, loader initialization and basic gameplay independently on 2.2081 and the exact 2.209 build(s) targeted.
    - Publish a compatibility matrix listing Android version, ABI, game build and features actually tested.
 
 ## Acceptance criteria
