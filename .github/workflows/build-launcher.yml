@@ -1,39 +1,52 @@
-name: Build GPTM Android APK
+name: Package GPTM NOVE mod
 
 on:
   workflow_dispatch:
   push:
     paths:
-      - "launcher/**"
+      - "nove-package/**"
+      - "docs/NOVE_FORMAT.md"
       - ".github/workflows/build-launcher.yml"
 
 permissions:
   contents: read
 
 jobs:
-  build-launcher:
+  package-nove:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Java 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
+      - name: Validate NOVE manifest
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path("nove-package/manifest.json")
+          data = json.loads(p.read_text(encoding="utf-8"))
+          required = ["format", "id", "name", "version", "target", "entrypoint", "status"]
+          missing = [key for key in required if not data.get(key)]
+          if missing:
+              raise SystemExit("Missing manifest fields: " + ", ".join(missing))
+          if data["format"] != "nove":
+              raise SystemExit("Unsupported package format")
+          if not data["id"].replace(".", "").replace("-", "").isalnum():
+              raise SystemExit("Invalid mod id")
+          print("NOVE manifest valid:", data["id"], data["version"])
+          PY
 
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: "8.9"
+      - name: Build .nove package
+        run: |
+          mkdir -p dist
+          cd nove-package
+          zip -r ../dist/GPTM.nove . -x "*.DS_Store"
+          cd ..
+          unzip -l dist/GPTM.nove
 
-      - name: Build debug APK
-        run: gradle -p launcher :app:assembleDebug
-
-      - name: Upload APK artifact
+      - name: Upload NOVE mod package
         uses: actions/upload-artifact@v4
         with:
-          name: gptm-android-debug-apk
-          path: launcher/app/build/outputs/apk/debug/app-debug.apk
+          name: GPTM-nove-mod
+          path: dist/GPTM.nove
           if-no-files-found: error
