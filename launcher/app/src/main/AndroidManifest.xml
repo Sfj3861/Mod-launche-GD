@@ -6,6 +6,10 @@
     <queries>
         <package android:name="com.robtopx.geometryjump" />
         <package android:name="com.robtopx.geometryjump2" />
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
     </queries>
 
     <application
