@@ -55,7 +55,7 @@ object NovaLoader {
                 }
             }
 
-            val report = validateArchive(temp)
+            val report = validateArchive(temp, GameDiagnostics.inspect(context))
             if (!report.acceptedForLibrary) return report
 
             val safeId = report.packageId!!.replace(Regex("[^A-Za-z0-9._-]"), "_")
@@ -80,7 +80,7 @@ object NovaLoader {
         }
     }
 
-    private fun validateArchive(file: File): Report {
+    private fun validateArchive(file: File, gameDiagnostics: GameDiagnostics): Report {
         if (file.length() <= 0L || file.length() > MAX_ARCHIVE_BYTES) {
             return failure("Tamaño de archivo inválido.")
         }
@@ -158,21 +158,42 @@ object NovaLoader {
             return failure("Este paquete no declara Geometry Dash como juego objetivo.")
         }
 
-        val runnable = status in setOf("ready", "runnable", "stable") &&
+        val targetAbis = target.optJSONArray("abis")
+        val deviceAbis = android.os.Build.SUPPORTED_ABIS.toList()
+        val abiCompatible = targetAbis == null || (0 until targetAbis.length())
+            .map { targetAbis.optString(it) }
+            .any { it in deviceAbis }
+        val targetProfiles = target.optJSONArray("profiles")
+        val profileVersions = mutableListOf<String>()
+        if (targetProfiles != null) {
+            for (index in 0 until targetProfiles.length()) {
+                val item = targetProfiles.optJSONObject(index)
+                if (item != null) profileVersions += item.optString("version")
+            }
+        }
+        val profileCompatible = profileVersions.isEmpty() ||
+            profileVersions.any { marker ->
+                marker.isNotBlank() && gameDiagnostics.profile.contains(marker)
+            }
+        val declaredRunnable = status in setOf("ready", "runnable", "stable") &&
             !entrypoint.endsWith(".md", ignoreCase = true)
         val reportText = buildString {
             append("Paquete: $name\nID: $id\nVersión: $version\nAutor: $author\n")
             append("Runtime declarado: $runtime\nEstado declarado: $status\n")
             append("Entradas ZIP: $entryCount\nTamaño expandido: $expandedBytes bytes\n")
             append("Entrypoint: $entrypoint\n")
-            if (!runnable) {
-                append("\nNo ejecutable: el estado del paquete no declara un payload ejecutable compatible.")
+            append("ABI del dispositivo: " + (deviceAbis.firstOrNull() ?: "desconocida") + "\n")
+            append("ABI compatible según manifest: " + if (abiCompatible) "sí\n" else "no\n")
+            append("Perfil detectado: " + gameDiagnostics.profile + "\n")
+            append("Perfil compatible según manifest: " + if (profileCompatible) "posible\n" else "no\n")
+            if (!declaredRunnable) {
+                append("\nPaquete de metadatos/documentación: no declara un payload ejecutable.")
             }
-            append("\nEl validador de NOVA no carga ni ejecuta código nativo.")
+            append("\nEstado real: no ejecutable todavía; falta un runtime NOVA nativo verificado para este build.")
         }
         return Report(
             acceptedForLibrary = true,
-            runnable = runnable,
+            runnable = false,
             packageId = id,
             displayName = name,
             version = version,
