@@ -29,6 +29,7 @@ class OverlayService : Service() {
     private var bubble: TextView? = null
     private var bubbleParams: WindowManager.LayoutParams? = null
     private var panel: View? = null
+    private var panelParams: WindowManager.LayoutParams? = null
     private var selectedTab = "Jugador"
     private var contentContainer: LinearLayout? = null
     private var tabButtons = mutableMapOf<String, TextView>()
@@ -119,7 +120,7 @@ class OverlayService : Service() {
 
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(background)
+            setBackgroundColor(this@OverlayService.background)
             setPadding(dp(12), dp(10), dp(12), dp(12))
         }
 
